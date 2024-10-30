@@ -442,11 +442,39 @@ def init_database():
 # Routes - Main Pages
 @app.route('/')
 def index():
-    featured_listings = Listing.query.filter_by(status='active').order_by(desc(Listing.created_at)).limit(6).all()
-    return render_template('index.html', 
-                         featured_listings=featured_listings,
-                         username=session.get('username'),
-                         now=datetime.now())
+    try:
+        # First check if database is ready
+        tables_exist = bool(db.engine.table_names())
+        if not tables_exist:
+            db.create_all()
+            print("Tables created")
+            
+        # Attempt to get listings without requiring login
+        featured_listings = []
+        try:
+            featured_listings = Listing.query.filter_by(status='active').limit(6).all()
+        except Exception as e:
+            print(f"Listing query error: {str(e)}")
+            featured_listings = []
+            
+        return render_template('index.html', 
+                             featured_listings=featured_listings,
+                             username=session.get('username'),
+                             now=datetime.now())
+    except Exception as e:
+        # Return a basic response instead of redirecting
+        return f"""
+        <html>
+            <head><title>Hire Safari - Initialization</title></head>
+            <body>
+                <h1>Site Initialization</h1>
+                <p>Status: Setting up database...</p>
+                <p>Tables: {db.engine.table_names() if db else 'No database connection'}</p>
+                <p>Error: {str(e)}</p>
+                <p><a href="/init-db">Click here to initialize database</a></p>
+            </body>
+        </html>
+        """
 
 @app.route('/dashboard')
 def dashboard():
