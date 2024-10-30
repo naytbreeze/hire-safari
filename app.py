@@ -396,6 +396,7 @@ def complete_account_setup():
     return render_template('complete_account_setup.html', 
                          email=session['verified_email'],
                          form={'csrf_token': generate_csrf()})
+
 @app.route('/health')
 def health_check():
     try:
@@ -410,6 +411,32 @@ def health_check():
         return jsonify({
             'status': 'unhealthy',
             'error': str(e)
+        }), 500
+
+@app.route('/init-db')
+def init_database():
+    try:
+        db.create_all()
+        # Create a test admin user
+        if not User.query.filter_by(email='admin@example.com').first():
+            admin = User(
+                username='admin',
+                email='admin@example.com',
+                password=generate_password_hash('admin123'),
+                role='admin',
+                verified=True
+            )
+            db.session.add(admin)
+            db.session.commit()
+        return jsonify({
+            'status': 'success',
+            'message': 'Database initialized',
+            'tables': [table for table in db.engine.table_names()]
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
         }), 500
 
 # Routes - Main Pages
