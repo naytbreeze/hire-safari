@@ -823,7 +823,7 @@ def not_found_error(error):
 
 @app.errorhandler(500)
 def internal_error(error):
-    logger.error(f"500 error: {str(e)}")
+    logger.error(f"500 error: {str(error)}")  # Changed 'e' to 'error'
     db.session.rollback()
     flash('An internal server error occurred', 'error')
     return redirect(url_for('index'))
