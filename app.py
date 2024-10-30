@@ -396,6 +396,21 @@ def complete_account_setup():
     return render_template('complete_account_setup.html', 
                          email=session['verified_email'],
                          form={'csrf_token': generate_csrf()})
+@app.route('/health')
+def health_check():
+    try:
+        # Check if we can connect to the database
+        db.session.execute('SELECT 1')
+        return jsonify({
+            'status': 'healthy',
+            'database': 'connected',
+            'tables': [table for table in db.engine.table_names()]
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'unhealthy',
+            'error': str(e)
+        }), 500
 
 # Routes - Main Pages
 @app.route('/')
