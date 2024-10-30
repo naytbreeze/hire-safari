@@ -1,0 +1,33 @@
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Database files
+instance/
+*.db
+*.sqlite3
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+
+# VS Code settings
+.vscode/
+
+# Uploaded user content
+static/uploads/*
+!static/uploads/.gitkeep
+
+# Test files
+test_*.py
+
+# Migration files
+migration.log
+migrate_data.py
+database_export.sql
+check_sqlite.py

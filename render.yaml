@@ -1,0 +1,50 @@
+# render.yaml
+services:
+  # Web service configuration
+  - type: web
+    name: hire-safari
+    env: python
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      mkdir -p static/uploads
+      mkdir -p instance
+    startCommand: gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.12
+      - key: SECRET_KEY
+        generateValue: true
+      - key: WTF_CSRF_SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: hire-safari-db
+          property: connectionString
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 465
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: STRIPE_API_KEY
+        sync: false
+
+  # Database service configuration
+  - type: postgresql
+    name: hire-safari-db
+    plan: free
+    ipAllowList: [] # only allow internal connections
+
+    # Database backup settings
+    backup:
+      enabled: true
+      period: 24h # daily backups
+      retainPeriod: 7d # retain backups for 7 days
+
+# Static file and asset configuration
+staticPublishPath: ./static

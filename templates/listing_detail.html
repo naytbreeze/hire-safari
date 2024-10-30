@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>{{ listing.title }} - Hire Safari</title>
+    <!-- Add Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React and ReactDOM -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+</head>
+<body>
+    <!-- Header/Navigation -->
+    <div class="max-w-7xl mx-auto px-4">
+        <div class="flex justify-between h-16">
+            <div class="flex">
+                <div class="flex-shrink-0 flex items-center">
+                    <a href="{{ url_for('index') }}">
+                        <img src="{{ url_for('static', filename='images/hire2.png') }}" alt="Hire Safari" class="h-8 w-auto">
+                    </a>
+                </div>
+            </div>
+
+            <div class="flex items-center">
+                <a href="{{ url_for('index') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2">Home</a>
+                <a href="{{ url_for('search_listings') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2">Browse Services</a>
+                {% if 'user_id' in session %}
+                    <a href="{{ url_for('dashboard') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2">Dashboard</a>
+                    <a href="{{ url_for('logout') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('sign_in') }}" class="text-gray-600 hover:text-gray-900 px-3 py-2">Sign In</a>
+                    <a href="{{ url_for('pricing') }}" class="bg-blue-600 text-white px-4 py-2 rounded-md ml-3">List a Service</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-8" role="main">
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+            <!-- Listing Image -->
+            <div class="relative h-96">
+                {% if listing.images %}
+                    {% set images = listing.images|fromjson %}
+                    {% if images %}
+                        <img src="{{ url_for('static', filename='uploads/' + images[0]) }}" 
+                             alt="{{ listing.title }}" 
+                             class="w-full h-full object-cover">
+                    {% else %}
+                        <img src="{{ url_for('static', filename='images/placeholder.jpg') }}" 
+                             alt="No image available" 
+                             class="w-full h-full object-cover">
+                    {% endif %}
+                {% else %}
+                    <img src="{{ url_for('static', filename='images/placeholder.jpg') }}" 
+                         alt="No image available" 
+                         class="w-full h-full object-cover">
+                {% endif %}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 p-6">
+                <!-- Listing Details -->
+                <div class="md:col-span-2">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-4">{{ listing.title }}</h1>
+                    
+                    <div class="flex items-center mb-4">
+                        <span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
+                            {{ listing.category }}
+                        </span>
+                        <span class="ml-4 text-gray-600">{{ listing.price_range }}</span>
+                    </div>
+
+                    <div class="prose max-w-none mb-8">
+                        <h2 class="text-xl font-semibold mb-2">About this service</h2>
+                        <p>{{ listing.description }}</p>
+                    </div>
+
+                    <div class="mb-8">
+                        <h2 class="text-xl font-semibold mb-4">Business Hours</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {% if listing.business_hours %}
+                                {% set hours = listing.business_hours|fromjson %}
+                                {% for day in ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'] %}
+                                    <div class="flex justify-between py-2 border-b">
+                                        <span class="font-medium capitalize">{{ day }}</span>
+                                        {% if day in hours %}
+                                            <span>{{ hours[day]['open']|format_time }} - {{ hours[day]['close']|format_time }}</span>
+                                        {% else %}
+                                            <span class="text-gray-500">Closed</span>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <p>Business hours not available</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Booking and Contact Section -->
+                <div class="bg-gray-50 p-6 rounded-lg">
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold mb-4">Contact Information</h2>
+                        <div class="space-y-3">
+                            <p>{{ listing.address }}, {{ listing.city }}, {{ listing.state }} {{ listing.zip_code }}</p>
+                            <p>{{ listing.phone }}</p>
+                            <p>{{ listing.email }}</p>
+                            {% if listing.website %}
+                                <a href="{{ listing.website }}" class="text-blue-600 hover:text-blue-800" target="_blank">
+                                    Visit Website
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-6">
+                        <h2 class="text-xl font-semibold mb-4">Book Appointment</h2>
+                        {% if 'user_id' in session %}
+                            <div id="booking-selector"></div>
+                            
+                            <!-- Initialize BookingWidget -->
+                            <script>
+                                // Make business hours and listing ID available to the BookingWidget
+                                window.BUSINESS_HOURS = '{{ listing.business_hours|safe }}';
+                                window.LISTING_ID = {{ listing.id }};
+                            </script>
+
+                            <!-- Load BookingWidget Component -->
+                            <script src="{{ url_for('static', filename='js/components/BookingWidget.js') }}"></script>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', function() {
+                                    const container = document.getElementById('booking-selector');
+                                    const root = ReactDOM.createRoot(container);
+                                    root.render(React.createElement(window.BookingWidget));
+                                });
+                            </script>
+                        {% else %}
+                            <div class="text-center p-4 bg-gray-100 rounded-lg">
+                                <p class="mb-4">Please sign in to book an appointment</p>
+                                <a href="{{ url_for('sign_in') }}" 
+                                   class="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">
+                                    Sign In
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-8">
+        <p class="text-gray-500">© 2024 Hire Safari. All rights reserved.</p>
+    </footer>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="fixed top-4 right-4 z-50">
+                {% for category, message in messages %}
+                    <div class="p-4 mb-4 rounded-md {{ 'bg-red-100 text-red-700' if category == 'error' else 'bg-green-100 text-green-700' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+</body>
+</html>

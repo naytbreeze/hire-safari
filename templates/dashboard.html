@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Hire Safari</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+</head>
+<body class="min-h-screen flex bg-gray-100">
+    <!-- Sidebar -->
+    <div class="fixed w-64 h-screen bg-white shadow-lg">
+        <div class="flex items-center justify-center h-20 shadow-md">
+            <a href="{{ url_for('index') }}" class="flex items-center">
+                <img class="h-8 w-auto" src="{{ url_for('static', filename='images/hire2.png') }}" alt="Hire Safari">
+            </a>
+        </div>
+
+        <div class="px-6 py-4">
+            <a href="{{ url_for('dashboard') }}" 
+               class="flex items-center p-4 text-gray-700 hover:bg-gray-100 rounded-lg {{ 'bg-gray-100' if request.endpoint == 'dashboard' }}">
+                <i class="fas fa-home mr-3"></i>
+                Dashboard
+            </a>
+            
+            {% if user and user.is_lister() %}
+                <a href="{{ url_for('create_listing') }}" 
+                   class="flex items-center p-4 mt-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i class="fas fa-plus mr-3"></i>
+                    Create Listing
+                </a>
+                <a href="{{ url_for('search_listings') }}" 
+                   class="flex items-center p-4 mt-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <i class="fas fa-list mr-3"></i>
+                    My Listings
+                </a>
+            {% else %}
+                <a href="{{ url_for('pricing') }}" 
+                   class="flex items-center p-4 mt-2 text-blue-600 hover:bg-blue-50 rounded-lg">
+                    <i class="fas fa-arrow-circle-up mr-3"></i>
+                    Become a Service Provider
+                </a>
+            {% endif %}
+            
+            <a href="#bookings" 
+               class="flex items-center p-4 mt-2 text-gray-600 hover:bg-gray-100 rounded-lg">
+                <i class="fas fa-calendar mr-3"></i>
+                My Bookings
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="ml-64 flex-1">
+        <!-- Top Navigation -->
+        <div class="bg-white h-20 shadow-sm flex items-center justify-between px-8">
+            <div class="flex items-center">
+                <span class="text-xl font-semibold">Welcome, {{ username }}</span>
+            </div>
+
+            <div class="flex items-center space-x-6">
+                <a href="{{ url_for('logout') }}" class="text-gray-600 hover:text-gray-800">
+                    <i class="fas fa-sign-out-alt mr-2"></i>
+                    Logout
+                </a>
+            </div>
+        </div>
+
+        <!-- Dashboard Content -->
+        <div class="p-8">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="mb-4 p-4 rounded-md {{ 'bg-red-100 text-red-700' if category == 'error' else 'bg-green-100 text-green-700' }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                {% if user and user.is_lister() %}
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="flex items-center">
+                            <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                                <i class="fas fa-list text-xl"></i>
+                            </div>
+                            <div class="ml-4">
+                                <h3 class="text-gray-500 text-sm">Active Listings</h3>
+                                <span class="text-2xl font-bold">{{ listings|length if listings else 0 }}</span>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-500">
+                            <i class="fas fa-calendar-check text-xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-gray-500 text-sm">Bookings</h3>
+                            <span class="text-2xl font-bold">{{ bookings|length if bookings else 0 }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {% if user and user.is_lister() %}
+                <!-- Listings Section -->
+                <div class="bg-white rounded-lg shadow-sm p-6 mb-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-xl font-semibold">My Listings</h2>
+                        <a href="{{ url_for('create_listing') }}" 
+                           class="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors">
+                            Create New Listing
+                        </a>
+                    </div>
+
+                    {% if listings %}
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            {% for listing in listings %}
+                                <div class="border rounded-lg overflow-hidden">
+                                    {% if listing.images %}
+                                        {% set images = listing.images|fromjson %}
+                                        {% if images and images[0] %}
+                                            <img src="{{ url_for('static', filename='uploads/' + images[0]) }}" 
+                                                alt="{{ listing.title }}" 
+                                                class="w-full h-48 object-cover">
+                                        {% endif %}
+                                    {% endif %}
+                                    <div class="p-4">
+                                        <h3 class="font-semibold text-lg mb-2">{{ listing.title }}</h3>
+                                        <p class="text-gray-600">{{ listing.category }}</p>
+                                        <p class="text-gray-600">{{ listing.city }}, {{ listing.state }}</p>
+                                        <p class="text-gray-600">{{ listing.price_range }}</p>
+                                        <div class="mt-4 flex justify-between items-center">
+                                            <a href="{{ url_for('view_listing', listing_id=listing.id) }}" 
+                                               class="text-blue-600 hover:text-blue-800">
+                                                View Details
+                                            </a>
+                                            <span class="text-sm text-gray-500">
+                                                Status: {{ listing.status|title }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center py-8 text-gray-500">
+                            <p>You haven't created any listings yet.</p>
+                            <a href="{{ url_for('create_listing') }}" 
+                               class="text-blue-600 hover:text-blue-800 mt-2 inline-block">
+                                Create your first listing
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endif %}
+
+            <!-- Bookings Section -->
+            <div id="bookings" class="bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-semibold mb-4">Bookings</h2>
+                {% if bookings %}
+                    <div class="space-y-4">
+                        {% for booking in bookings %}
+                            <div class="flex items-center p-4 border-b hover:bg-gray-50">
+                                <div class="p-3 rounded-full bg-blue-100 text-blue-500">
+                                    <i class="fas fa-calendar text-xl"></i>
+                                </div>
+                                <div class="ml-4 flex-1">
+                                    <h4 class="text-sm font-semibold">
+                                        {{ booking.listing.title }}
+                                        {% if is_lister_booking(booking) %}
+                                            <span class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full ml-2">Booking Received</span>
+                                        {% else %}
+                                            <span class="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full ml-2">Your Booking</span>
+                                        {% endif %}
+                                    </h4>
+                                    <p class="text-gray-600">{{ booking.booking_date.strftime('%B %d, %Y') }} at {{ booking.booking_time }}</p>
+                                    <span class="text-xs px-2 py-1 rounded-full {{ 'bg-yellow-100 text-yellow-800' if booking.status == 'pending' else 'bg-green-100 text-green-800' if booking.status == 'confirmed' else 'bg-red-100 text-red-800' }}">
+                                        Status: {{ booking.status|title }}
+                                    </span>
+                                    {% if booking.notes %}
+                                        <p class="text-sm text-gray-600 mt-1">Notes: {{ booking.notes }}</p>
+                                    {% endif %}
+                                </div>
+                                {% if is_lister_booking(booking) and booking.status == 'pending' %}
+                                    <div class="flex space-x-4">
+                                        <a href="{{ url_for('manage_booking', booking_id=booking.id, action='confirm') }}" 
+                                           class="text-green-600 hover:text-green-800 flex items-center">
+                                            <i class="fas fa-check mr-1"></i>
+                                            Approve
+                                        </a>
+                                        <a href="{{ url_for('manage_booking', booking_id=booking.id, action='cancel') }}" 
+                                           class="text-red-600 hover:text-red-800 flex items-center">
+                                            <i class="fas fa-times mr-1"></i>
+                                            Cancel
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4 text-gray-500">
+                        No bookings yet
+                    </div>
+                {% endif %}
+            </div>
+
+            {% if not user.is_lister() %}
+                <!-- Upgrade Call to Action -->
+                <div class="mt-8 bg-blue-50 rounded-lg p-6">
+                    <h3 class="text-lg font-semibold text-blue-900">Ready to grow your business?</h3>
+                    <p class="mt-2 text-blue-700">List your services and reach more customers today.</p>
+                    <a href="{{ url_for('pricing') }}" 
+                       class="mt-4 inline-block bg-blue-600 text-white px-6 py-2 rounded-md hover:bg-blue-700">
+                        Become a Service Provider
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AC Repair Listings - Hire Safari</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header>
+    <div class="logo">
+      <a href="index.html"><img src="images/logo.png" alt="Hire Safari Logo"></a>
+    </div>
+    <nav>
+      <ul>
+        <li><a href="index.html">Home</a></li>
+        <li><a href="#contact">Contact Us</a></li>
+      </ul>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <div class="hero-content">
+      <h2>AC Repair Services in Your Area</h2>
+      <p>We found the best companies for AC repair based on your location.</p>
+    </div>
+  </section>
+
+  <section class="listings">
+    <h2>Available AC Repair Companies</h2>
+
+    <div class="listings-grid" id="listings-grid">
+      <div class="listing" data-location="miami">
+        <h3>Cool Air Solutions</h3>
+        <p>Highly rated AC repair service. Location: Miami, FL</p>
+      </div>
+      <div class="listing" data-location="orlando">
+        <h3>AC Masters</h3>
+        <p>Trusted professionals in AC installation and repair. Location: Orlando, FL</p>
+      </div>
+      <div class="listing" data-location="miami">
+        <h3>Pro AC Repair</h3>
+        <p>Emergency AC repair available. Location: Miami, FL</p>
+      </div>
+      <!-- Add more listings as needed -->
+    </div>
+  </section>
+
+  <footer>
+    <p>© 2024 Hire Safari</p>
+  </footer>
+
+  <script>
+    // Get the location from the URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const userLocation = urlParams.get('location');
+
+    // Filter listings based on location
+    function filterListingsByLocation(location) {
+      const listings = document.querySelectorAll(".listing");
+
+      listings.forEach(listing => {
+        const listingLocation = listing.getAttribute("data-location");
+
+        if (listingLocation.includes(location)) {
+          listing.style.display = "block";
+        } else {
+          listing.style.display = "none";
+        }
+      });
+    }
+
+    // Automatically filter the listings when the page loads
+    if (userLocation) {
+      filterListingsByLocation(userLocation);
+    }
+  </script>
+</body>
+</html>

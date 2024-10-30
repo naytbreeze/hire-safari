@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Successful - Hire Safari</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="min-h-screen flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div class="text-center">
+                <a href="{{ url_for('index') }}">
+                    <img class="mx-auto h-12 w-auto" src="{{ url_for('static', filename='images/hire2.png') }}" alt="Hire Safari Logo">
+                </a>
+                <h2 class="mt-6 text-3xl font-extrabold text-gray-900">Payment Successful!</h2>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="space-y-4">
+                        {% for category, message in messages %}
+                            <div class="p-4 rounded-md {{ 'bg-red-100 text-red-700' if category == 'error' else 'bg-green-100 text-green-700' }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            <div class="bg-white p-8 rounded-lg shadow">
+                <div class="text-center">
+                    <p class="mb-4">A verification email has been sent to:</p>
+                    <p class="text-lg font-semibold text-blue-600">{{ email }}</p>
+                    <p class="mt-4 text-gray-600">Please check your email and click the verification link to complete your account setup.</p>
+                    
+                    <div class="mt-6">
+                        <p class="text-sm text-gray-500">Didn't receive the email?</p>
+                        <form action="{{ url_for('resend_verification') }}" method="POST" class="mt-2">
+                            <input type="hidden" name="email" value="{{ email }}">
+                            <button type="submit" class="text-blue-600 hover:text-blue-800">
+                                Resend verification email
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="{{ url_for('index') }}" class="text-blue-600 hover:text-blue-800">
+                    Return to Home
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
