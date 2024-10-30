@@ -5,20 +5,27 @@ from flask_mail import Mail, Message
 from flask_wtf import CSRFProtect
 from flask_wtf.csrf import generate_csrf, CSRFError
 
+# Environment variables
+from dotenv import load_dotenv
+import os
+
+# Load environment variables before config import
+load_dotenv()
+
 # Use Production config for deployment
 from config import ProductionConfig
 
-# Database and utility imports
+# Rest of your imports...
 from sqlalchemy import or_, desc
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from werkzeug.security import check_password_hash, generate_password_hash
 from werkzeug.utils import secure_filename
 import stripe
 from datetime import datetime, timedelta
-import os
 import json
 import logging
 import time
+
 
 # Configure production logging
 logging.basicConfig(
@@ -193,11 +200,13 @@ def send_booking_status_notification(booking):
         
     try:
         status_text = "confirmed" if booking.status == "confirmed" else "cancelled"
-        msg = Message(
+        
+        # Email to user - they get lister's contact info
+        user_msg = Message(
             f'Booking {status_text.title()} - Hire Safari',
             recipients=[user.email]
         )
-        msg.body = f'''
+        user_msg.body = f'''
         Your booking has been {status_text}:
         
         Service: {booking.listing.title}
@@ -212,7 +221,38 @@ def send_booking_status_notification(booking):
         Best regards,
         The Hire Safari Team
         '''
-        mail.send(msg)
+        mail.send(user_msg)
+        
+        # Send notification to lister - they get user's contact info
+        if status_text == "confirmed":
+            lister = User.query.get(booking.listing.user_id)
+            if lister:
+                # Extract phone from notes
+                phone = "Not provided"
+                if "Contact Phone: " in booking.notes:
+                    phone = booking.notes.split("Contact Phone: ")[1].split("\n")[0]
+                    
+                lister_msg = Message(
+                    f'New Booking Confirmed - Hire Safari',
+                    recipients=[lister.email]
+                )
+                lister_msg.body = f'''
+                A booking has been confirmed for your service:
+                
+                Service: {booking.listing.title}
+                Date: {booking.booking_date}
+                Time: {booking.booking_time}
+                
+                Customer Contact Information:
+                Name: {user.username}
+                Email: {user.email}
+                Phone: {phone}
+                
+                Best regards,
+                The Hire Safari Team
+                '''
+                mail.send(lister_msg)
+        
         return True
     except Exception as e:
         logger.error(f"Error sending status notification: {str(e)}")
@@ -636,23 +676,23 @@ def get_available_slots(listing_id):
             return jsonify({'error': 'Date is required'}), 400
 
         booking_date = datetime.strptime(date_str, '%Y-%m-%d').date()
-        
         listing = Listing.query.get_or_404(listing_id)
-        if not listing.business_hours:
-            return jsonify({'error': 'Business hours not available'}), 400
-            
-        business_hours = json.loads(listing.business_hours)
-        day_name = booking_date.strftime('%A').lower()
         
-        if day_name not in business_hours:
-            return jsonify({'slots': [], 'message': 'Business is closed on this day'}), 200
-            
         existing_bookings = Booking.query.filter_by(
             listing_id=listing_id,
             booking_date=booking_date,
             status='confirmed'
         ).all()
         
+        if not listing.business_hours:
+            return jsonify({'slots': []}), 200
+            
+        business_hours = json.loads(listing.business_hours)
+        day_name = booking_date.strftime('%A').lower()
+        
+        if day_name not in business_hours:
+            return jsonify({'slots': []}), 200
+            
         booked_times = [booking.booking_time for booking in existing_bookings]
         
         day_hours = business_hours[day_name]
@@ -673,7 +713,7 @@ def get_available_slots(listing_id):
         
     except Exception as e:
         logger.error(f"Error getting available slots: {str(e)}")
-        return jsonify({'error': 'Error retrieving available slots'}), 500
+        return jsonify({'slots': []}), 200
 
 @app.route('/book-listing/<int:listing_id>', methods=['POST'])
 def book_listing(listing_id):
@@ -684,23 +724,19 @@ def book_listing(listing_id):
         data = request.get_json()
         booking_date = datetime.strptime(data['date'], '%Y-%m-%d').date()
         booking_time = data['time']
+        phone = data.get('phone', '')
         
-        existing_booking = Booking.query.filter_by(
-            listing_id=listing_id,
-            booking_date=booking_date,
-            booking_time=booking_time,
-            status='confirmed'
-        ).first()
+        # Create notes with phone
+        notes = f"Contact Phone: {phone}"
+        if data.get('notes'):
+            notes += f"\n{data.get('notes')}"
         
-        if existing_booking:
-            return jsonify({'error': 'This time slot is already booked'}), 400
-            
         booking = Booking(
             listing_id=listing_id,
             user_id=session['user_id'],
             booking_date=booking_date,
             booking_time=booking_time,
-            notes=data.get('notes', '')
+            notes=notes
         )
         
         db.session.add(booking)
@@ -814,20 +850,38 @@ def format_time_filter(time_str):
 def init_app():
     with app.app_context():
         try:
-            db.create_all()
-            logger.info("Database initialized successfully")
-            
-            # Ensure required directories exist
+            # Ensure directories exist
+            os.makedirs('instance', exist_ok=True)
             os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
             
+            # Create database tables
+            db.create_all()
+            
+            # Add a test record if database is empty
+            if not User.query.first():
+                test_user = User(
+                    username='admin',
+                    email='admin@example.com',
+                    password=generate_password_hash('password'),
+                    role='admin',
+                    verified=True
+                )
+                db.session.add(test_user)
+                db.session.commit()
+                logger.info("Test user created")
+            
+            logger.info("Application initialized successfully")
             return True
         except Exception as e:
             logger.error(f"Error initializing application: {str(e)}")
+            print(f"Error: {str(e)}")  # Print error for debugging
             return False
 
 if __name__ == '__main__':
     if init_app():
-        print("Starting Flask application...")
         app.run(debug=True)
     else:
         print("Failed to initialize application")
+        # Print current directory and database path for debugging
+        print(f"Current directory: {os.getcwd()}")
+        print(f"Database path: {app.config['SQLALCHEMY_DATABASE_URI']}")

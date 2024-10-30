@@ -4,6 +4,7 @@ window.BookingWidget = function() {
     const [selectedDate, setSelectedDate] = React.useState('');
     const [availableSlots, setAvailableSlots] = React.useState([]);
     const [selectedTime, setSelectedTime] = React.useState('');
+    const [phoneNumber, setPhoneNumber] = React.useState('');  // New state for phone
     const [isLoading, setIsLoading] = React.useState(false);
     const [message, setMessage] = React.useState('');
 
@@ -20,6 +21,21 @@ window.BookingWidget = function() {
         const ampm = hour >= 12 ? 'PM' : 'AM';
         const formattedHour = hour % 12 || 12;
         return `${formattedHour}:${minutes} ${ampm}`;
+    };
+
+    // Phone number validation
+    const isValidPhone = (phone) => {
+        const cleaned = phone.replace(/\D/g, '');
+        return cleaned.length === 10;
+    };
+
+    // Format phone number as user types
+    const formatPhoneNumber = (value) => {
+        const cleaned = value.replace(/\D/g, '');
+        if (cleaned.length === 0) return '';
+        if (cleaned.length <= 3) return cleaned;
+        if (cleaned.length <= 6) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+        return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
     };
 
     // Fetch available slots when date changes
@@ -62,6 +78,11 @@ window.BookingWidget = function() {
             return;
         }
 
+        if (!phoneNumber || !isValidPhone(phoneNumber)) {
+            setMessage('Please enter a valid phone number');
+            return;
+        }
+
         setIsLoading(true);
         fetch(`/book-listing/${window.LISTING_ID}`, {
             method: 'POST',
@@ -71,7 +92,8 @@ window.BookingWidget = function() {
             },
             body: JSON.stringify({
                 date: selectedDate,
-                time: selectedTime
+                time: selectedTime,
+                phone: phoneNumber.replace(/\D/g, '')  // Send only digits
             })
         })
         .then(response => response.json())
@@ -82,6 +104,7 @@ window.BookingWidget = function() {
                 setMessage('Booking confirmed successfully!');
                 setSelectedDate('');
                 setSelectedTime('');
+                setPhoneNumber('');
                 setTimeout(() => window.location.reload(), 2000);
             }
         })
@@ -107,6 +130,19 @@ window.BookingWidget = function() {
                 value: selectedDate,
                 onChange: (e) => setSelectedDate(e.target.value),
                 min: new Date().toISOString().split('T')[0]
+            })
+        ),
+
+        // Phone Number Input (new)
+        React.createElement('div', { className: 'flex flex-col space-y-2' },
+            React.createElement('label', { className: 'text-sm font-medium text-gray-700' }, 'Phone Number'),
+            React.createElement('input', {
+                type: 'tel',
+                className: 'border rounded-lg px-3 py-2 w-full',
+                value: phoneNumber,
+                onChange: (e) => setPhoneNumber(formatPhoneNumber(e.target.value)),
+                placeholder: '(XXX) XXX-XXXX',
+                maxLength: 14
             })
         ),
 
@@ -150,12 +186,12 @@ window.BookingWidget = function() {
             'button',
             {
                 className: `w-full py-3 rounded-lg text-white ${
-                    selectedDate && selectedTime
+                    selectedDate && selectedTime && isValidPhone(phoneNumber)
                         ? 'bg-blue-600 hover:bg-blue-700'
                         : 'bg-gray-300 cursor-not-allowed'
                 }`,
                 onClick: handleBooking,
-                disabled: !selectedDate || !selectedTime || isLoading
+                disabled: !selectedDate || !selectedTime || !isValidPhone(phoneNumber) || isLoading
             },
             isLoading ? 'Processing...' : 'Book Appointment'
         )
