@@ -443,35 +443,37 @@ def init_database():
 @app.route('/')
 def index():
     try:
-        # First check if database is ready
-        tables_exist = bool(db.engine.table_names())
-        if not tables_exist:
-            db.create_all()
-            print("Tables created")
-            
-        # Attempt to get listings without requiring login
-        featured_listings = []
-        try:
-            featured_listings = Listing.query.filter_by(status='active').limit(6).all()
-        except Exception as e:
-            print(f"Listing query error: {str(e)}")
-            featured_listings = []
-            
+        # Force database initialization
+        db.create_all()
+        
+        # Create a test admin if none exists
+        if not User.query.first():
+            test_user = User(
+                username='admin',
+                email='admin@example.com',
+                password=generate_password_hash('admin123'),
+                role='admin',
+                verified=True
+            )
+            db.session.add(test_user)
+            db.session.commit()
+        
+        # Try to get listings without any filters
+        listings = Listing.query.limit(6).all()
+        
         return render_template('index.html', 
-                             featured_listings=featured_listings,
-                             username=session.get('username'),
+                             featured_listings=listings,
+                             username=None,  # Force no user authentication
                              now=datetime.now())
     except Exception as e:
-        # Return a basic response instead of redirecting
+        # Return a plain HTML response if anything fails
         return f"""
         <html>
-            <head><title>Hire Safari - Initialization</title></head>
             <body>
-                <h1>Site Initialization</h1>
-                <p>Status: Setting up database...</p>
-                <p>Tables: {db.engine.table_names() if db else 'No database connection'}</p>
+                <h1>Site Status</h1>
+                <p>Database Connected: {bool(db.engine)}</p>
+                <p>Tables: {[t for t in db.engine.table_names()]}</p>
                 <p>Error: {str(e)}</p>
-                <p><a href="/init-db">Click here to initialize database</a></p>
             </body>
         </html>
         """
@@ -920,31 +922,26 @@ def format_time_filter(time_str):
 def init_app():
     with app.app_context():
         try:
-            # Ensure directories exist
-            os.makedirs('instance', exist_ok=True)
-            os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
-            
-            # Create database tables
+            print("Creating database tables...")
             db.create_all()
+            print("Tables created successfully")
             
-            # Add a test record if database is empty
+            # Create test user
             if not User.query.first():
                 test_user = User(
                     username='admin',
                     email='admin@example.com',
-                    password=generate_password_hash('password'),
+                    password=generate_password_hash('admin123'),
                     role='admin',
                     verified=True
                 )
                 db.session.add(test_user)
                 db.session.commit()
-                logger.info("Test user created")
+                print("Test user created")
             
-            logger.info("Application initialized successfully")
             return True
         except Exception as e:
-            logger.error(f"Error initializing application: {str(e)}")
-            print(f"Error: {str(e)}")  # Print error for debugging
+            print(f"Error in init_app: {str(e)}")
             return False
 
 if __name__ == '__main__':
@@ -952,6 +949,4 @@ if __name__ == '__main__':
         app.run(debug=True)
     else:
         print("Failed to initialize application")
-        # Print current directory and database path for debugging
-        print(f"Current directory: {os.getcwd()}")
-        print(f"Database path: {app.config['SQLALCHEMY_DATABASE_URI']}")
+        print(f"Database URI: {app.config['SQLALCHEMY_DATABASE_URI']}")
