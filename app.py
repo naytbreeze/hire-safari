@@ -79,7 +79,7 @@ class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
-    password = db.Column(db.String(150), nullable=False)
+    password = db.Column(db.String(500), nullable=False)  # Changed from 150 to 500
     role = db.Column(db.String(50), nullable=False, default='user')
     verified = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
@@ -439,6 +439,20 @@ def init_database():
             'status': 'success',
             'message': 'Database initialized',
             'tables': [table for table in db.engine.table_names()]
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'message': str(e)
+        }), 500
+@app.route('/reset-db')
+def reset_database():
+    try:
+        db.drop_all()
+        db.create_all()
+        return jsonify({
+            'status': 'success',
+            'message': 'Database reset successfully'
         })
     except Exception as e:
         return jsonify({
