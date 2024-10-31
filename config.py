@@ -32,6 +32,13 @@ class ProductionConfig(Config):
     """Production configuration"""
     DEBUG = False
     
+    # Session configuration
+    SESSION_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+    SESSION_COOKIE_SAMESITE = 'Lax'
+    PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    
+    # Database settings
     SQLALCHEMY_ENGINE_OPTIONS = {
         'pool_size': 10,
         'pool_recycle': 3600,

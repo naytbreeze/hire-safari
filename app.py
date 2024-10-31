@@ -442,29 +442,39 @@ def init_database():
 # Routes - Main Pages
 @app.route('/')
 def index():
-    # Disable session check temporarily
-    session.permanent = False
-    
     try:
-        # Basic database check
+        # Initialize database if needed
         if not db.engine.table_names():
             db.create_all()
+            print("Created database tables")
         
-        # Try to get listings without filters
-        featured_listings = []
+        # Get listings without authentication requirement
+        listings = []
         try:
-            featured_listings = Listing.query.limit(6).all()
-        except:
-            featured_listings = []
-        
-        # Render template without requiring session
+            listings = Listing.query.filter_by(status='active').limit(6).all()
+        except Exception as e:
+            print(f"Listing query error: {str(e)}")
+            
+        # Don't require authentication for homepage
         return render_template('index.html', 
-                             featured_listings=featured_listings,
-                             username=None,  # Force no login requirement
+                             featured_listings=listings,
+                             username=None,
                              now=datetime.now())
+                             
     except Exception as e:
-        # Return plain text if everything fails
-        return f"Database Status: {bool(db.engine.table_names())}, Error: {str(e)}", 200
+        print(f"Index error: {str(e)}")
+        return f"""
+        <html>
+            <head><title>Site Status</title></head>
+            <body>
+                <h1>Site Status</h1>
+                <p>Database Connected: {bool(db.engine)}</p>
+                <p>Tables: {[t for t in db.engine.table_names()] if db.engine else []}</p>
+                <p>Error: {str(e)}</p>
+                <p><a href="/init-db">Initialize Database</a></p>
+            </body>
+        </html>
+        """, 200
 
 @app.route('/dashboard')
 def dashboard():
