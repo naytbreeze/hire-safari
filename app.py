@@ -443,38 +443,29 @@ def init_database():
 @app.route('/')
 def index():
     try:
-        # Initialize database if needed
-        if not db.engine.table_names():
-            db.create_all()
-            print("Created database tables")
+        # Force database initialization without checking tables
+        db.create_all()
         
-        # Get listings without authentication requirement
-        listings = []
-        try:
-            listings = Listing.query.filter_by(status='active').limit(6).all()
-        except Exception as e:
-            print(f"Listing query error: {str(e)}")
-            
-        # Don't require authentication for homepage
+        # Basic render without any database queries first
         return render_template('index.html', 
-                             featured_listings=listings,
+                             featured_listings=[],
                              username=None,
                              now=datetime.now())
                              
     except Exception as e:
-        print(f"Index error: {str(e)}")
-        return f"""
+        error_html = f"""
         <html>
             <head><title>Site Status</title></head>
             <body>
                 <h1>Site Status</h1>
-                <p>Database Connected: {bool(db.engine)}</p>
-                <p>Tables: {[t for t in db.engine.table_names()] if db.engine else []}</p>
+                <p>Database URL: {app.config.get('SQLALCHEMY_DATABASE_URI', 'Not set').split('@')[1] if app.config.get('SQLALCHEMY_DATABASE_URI') else 'Not set'}</p>
                 <p>Error: {str(e)}</p>
-                <p><a href="/init-db">Initialize Database</a></p>
+                <hr/>
+                <p><a href="/init-db">Click to Initialize Database</a></p>
             </body>
         </html>
-        """, 200
+        """
+        return error_html, 200
 
 @app.route('/dashboard')
 def dashboard():
