@@ -140,12 +140,16 @@ def save_uploaded_files(files):
 
 def send_verification_email(user_email):
     try:
+        print(f"Starting email send to {user_email}")
+        print(f"Mail settings: Server={app.config['MAIL_SERVER']}, Port={app.config['MAIL_PORT']}")
+        
         s = URLSafeTimedSerializer(app.secret_key)
         token = s.dumps(user_email, salt='email-verify-salt')
         verification_url = url_for('verify_email', token=token, _external=True)
 
         msg = Message(
             'Verify Your Email - Hire Safari',
+            sender=app.config['MAIL_USERNAME'],
             recipients=[user_email]
         )
         msg.body = f'''
@@ -160,10 +164,13 @@ def send_verification_email(user_email):
         The Hire Safari Team
         '''
         
+        print("Attempting to send email...")
         mail.send(msg)
+        print("Email sent successfully")
         logger.info(f"Verification email sent to {user_email}")
         return True
     except Exception as e:
+        print(f"Error sending email: {str(e)}")
         logger.error(f"Error sending verification email to {user_email}: {str(e)}")
         return False
 
