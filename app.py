@@ -448,13 +448,36 @@ def init_database():
 @app.route('/reset-db')
 def reset_database():
     try:
+        print("Starting database reset...")
+        inspector = db.inspect(db.engine)
+        existing_tables = inspector.get_table_names()
+        print(f"Existing tables: {existing_tables}")
+        
+        print("Dropping all tables...")
         db.drop_all()
+        
+        print("Creating all tables...")
         db.create_all()
+        
+        # Check the new table structure
+        inspector = db.inspect(db.engine)
+        new_tables = inspector.get_table_names()
+        
+        # Specifically check the user table columns
+        user_columns = {column['name']: column for column in inspector.get_columns('user')}
+        password_length = user_columns['password']['type'].length if 'password' in user_columns else 'unknown'
+        
         return jsonify({
             'status': 'success',
-            'message': 'Database reset successfully'
+            'message': 'Database reset successfully',
+            'details': {
+                'previous_tables': existing_tables,
+                'new_tables': new_tables,
+                'password_column_length': password_length
+            }
         })
     except Exception as e:
+        print(f"Error resetting database: {str(e)}")
         return jsonify({
             'status': 'error',
             'message': str(e)
