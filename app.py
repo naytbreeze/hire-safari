@@ -612,27 +612,37 @@ def create_checkout_session():
 @app.route('/success')
 def success():
     try:
+        print("=== Starting Success Route ===")
         session_id = request.args.get('session_id')
         email = request.args.get('email')
         
+        print(f"Session ID: {session_id}")
+        print(f"Email: {email}")
+        
         if not session_id or not email:
+            print("Missing session_id or email")
             flash('Invalid session or missing email', 'error')
             return redirect(url_for('index'))
 
         # Verify Stripe payment
+        print("Verifying Stripe payment...")
         checkout_session = stripe.checkout.Session.retrieve(session_id)
         if checkout_session.payment_status != 'paid':
+            print("Payment not completed")
             flash('Payment not completed', 'error')
             return redirect(url_for('pricing'))
 
+        print("Checking for existing user...")
         # Check for existing user
         user = User.query.filter_by(email=email).first()
         if user:
+            print(f"Updating existing user: {user.email}")
             # Upgrade existing user to lister
             user.role = 'lister'
             user.verified = False  # Need to verify email for lister privileges
             db.session.commit()
         else:
+            print(f"Creating new user with email: {email}")
             # Create new user
             user = User(
                 username=email.split('@')[0],  # Temporary username
@@ -645,14 +655,20 @@ def success():
             db.session.commit()
 
         # Send verification email
+        print("Attempting to send verification email...")
+        print(f"Mail Settings: SERVER={app.config.get('MAIL_SERVER')}, PORT={app.config.get('MAIL_PORT')}")
+        print(f"Username: {app.config.get('MAIL_USERNAME')}")
         if send_verification_email(email):
+            print("Email sent successfully!")
             flash('Payment successful! Please check your email to verify your lister account.', 'success')
             return render_template('success.html', email=email)
         else:
+            print("Email sending failed!")
             flash('Error sending verification email. Please contact support.', 'error')
             return redirect(url_for('index'))
 
     except Exception as e:
+        print(f"Error in success route: {str(e)}")
         logger.error(f"Error in success route: {str(e)}")
         flash('Error processing payment success', 'error')
         return redirect(url_for('index'))
