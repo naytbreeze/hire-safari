@@ -442,41 +442,29 @@ def init_database():
 # Routes - Main Pages
 @app.route('/')
 def index():
+    # Disable session check temporarily
+    session.permanent = False
+    
     try:
-        # Force database initialization
-        db.create_all()
+        # Basic database check
+        if not db.engine.table_names():
+            db.create_all()
         
-        # Create a test admin if none exists
-        if not User.query.first():
-            test_user = User(
-                username='admin',
-                email='admin@example.com',
-                password=generate_password_hash('admin123'),
-                role='admin',
-                verified=True
-            )
-            db.session.add(test_user)
-            db.session.commit()
+        # Try to get listings without filters
+        featured_listings = []
+        try:
+            featured_listings = Listing.query.limit(6).all()
+        except:
+            featured_listings = []
         
-        # Try to get listings without any filters
-        listings = Listing.query.limit(6).all()
-        
+        # Render template without requiring session
         return render_template('index.html', 
-                             featured_listings=listings,
-                             username=None,  # Force no user authentication
+                             featured_listings=featured_listings,
+                             username=None,  # Force no login requirement
                              now=datetime.now())
     except Exception as e:
-        # Return a plain HTML response if anything fails
-        return f"""
-        <html>
-            <body>
-                <h1>Site Status</h1>
-                <p>Database Connected: {bool(db.engine)}</p>
-                <p>Tables: {[t for t in db.engine.table_names()]}</p>
-                <p>Error: {str(e)}</p>
-            </body>
-        </html>
-        """
+        # Return plain text if everything fails
+        return f"Database Status: {bool(db.engine.table_names())}, Error: {str(e)}", 200
 
 @app.route('/dashboard')
 def dashboard():
