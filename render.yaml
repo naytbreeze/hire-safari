@@ -23,14 +23,10 @@ services:
         fromDatabase:
           name: hire-safari-db
           property: connectionString
-- key: MAIL_SERVER
-        value: smtp.hiresafari.com  # or smtp.siteground.com
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
       - key: MAIL_PORT
         value: 465
-      - key: MAIL_USE_SSL
-        value: "True"
-      - key: MAIL_USE_TLS
-        value: "False"
       - key: MAIL_USERNAME
         sync: false
       - key: MAIL_PASSWORD
