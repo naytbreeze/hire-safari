@@ -201,68 +201,81 @@ def send_booking_notification(user_id, booking):
         return False
 
 def send_booking_status_notification(booking):
-    user = User.query.get(booking.user_id)
-    if not user:
-        return False
-        
     try:
-        status_text = "confirmed" if booking.status == "confirmed" else "cancelled"
+        print("=== Email Settings ===")
+        print(f"Server: {app.config.get('MAIL_SERVER')}")
+        print(f"Port: {app.config.get('MAIL_PORT')}")
+        print(f"Username: {app.config.get('MAIL_USERNAME')}")
+        print(f"SSL: {app.config.get('MAIL_USE_SSL')}")
+        print(f"TLS: {app.config.get('MAIL_USE_TLS')}")
         
-        # Email to user - they get lister's contact info
-        user_msg = Message(
-            f'Booking {status_text.title()} - Hire Safari',
-            recipients=[user.email]
-        )
-        user_msg.body = f'''
-        Your booking has been {status_text}:
-        
-        Service: {booking.listing.title}
-        Date: {booking.booking_date}
-        Time: {booking.booking_time}
-        
-        {'Contact information:' if status_text == 'confirmed' else ''}
-        {f'Phone: {booking.listing.phone}' if status_text == 'confirmed' else ''}
-        {f'Email: {booking.listing.email}' if status_text == 'confirmed' else ''}
-        {f'Address: {booking.listing.address}, {booking.listing.city}, {booking.listing.state}' if status_text == 'confirmed' else ''}
-        
-        Best regards,
-        The Hire Safari Team
-        '''
-        mail.send(user_msg)
-        
-        # Send notification to lister - they get user's contact info
-        if status_text == "confirmed":
-            lister = User.query.get(booking.listing.user_id)
-            if lister:
-                # Extract phone from notes
-                phone = "Not provided"
-                if "Contact Phone: " in booking.notes:
-                    phone = booking.notes.split("Contact Phone: ")[1].split("\n")[0]
+        user = User.query.get(booking.user_id)
+        if not user:
+            print("User not found!")
+            return False
+            
+        try:
+            status_text = "confirmed" if booking.status == "confirmed" else "cancelled"
+            
+            # Email to user - they get lister's contact info
+            user_msg = Message(
+                f'Booking {status_text.title()} - Hire Safari',
+                sender=app.config.get('MAIL_USERNAME'),
+                recipients=[user.email]
+            )
+            user_msg.body = f'''
+            Your booking has been {status_text}:
+            
+            Service: {booking.listing.title}
+            Date: {booking.booking_date}
+            Time: {booking.booking_time}
+            
+            {'Contact information:' if status_text == 'confirmed' else ''}
+            {f'Phone: {booking.listing.phone}' if status_text == 'confirmed' else ''}
+            {f'Email: {booking.listing.email}' if status_text == 'confirmed' else ''}
+            {f'Address: {booking.listing.address}, {booking.listing.city}, {booking.listing.state}' if status_text == 'confirmed' else ''}
+            
+            Best regards,
+            The Hire Safari Team
+            '''
+            print("Attempting to send email to user...")
+            mail.send(user_msg)
+            print("Email sent to user successfully!")
+            
+            if status_text == "confirmed":
+                # Send notification to lister
+                lister = User.query.get(booking.listing.user_id)
+                if lister:
+                    lister_msg = Message(
+                        f'New Booking Confirmed - Hire Safari',
+                        sender=app.config.get('MAIL_USERNAME'),
+                        recipients=[lister.email]
+                    )
+                    lister_msg.body = f'''
+                    A booking has been confirmed for your service:
                     
-                lister_msg = Message(
-                    f'New Booking Confirmed - Hire Safari',
-                    recipients=[lister.email]
-                )
-                lister_msg.body = f'''
-                A booking has been confirmed for your service:
-                
-                Service: {booking.listing.title}
-                Date: {booking.booking_date}
-                Time: {booking.booking_time}
-                
-                Customer Contact Information:
-                Name: {user.username}
-                Email: {user.email}
-                Phone: {phone}
-                
-                Best regards,
-                The Hire Safari Team
-                '''
-                mail.send(lister_msg)
-        
-        return True
+                    Service: {booking.listing.title}
+                    Date: {booking.booking_date}
+                    Time: {booking.booking_time}
+                    
+                    Customer Contact Information:
+                    Name: {user.username}
+                    Email: {user.email}
+                    
+                    Best regards,
+                    The Hire Safari Team
+                    '''
+                    print("Attempting to send email to lister...")
+                    mail.send(lister_msg)
+                    print("Email sent to lister successfully!")
+            
+            return True
+        except Exception as e:
+            print(f"Error sending notification email: {str(e)}")
+            return False
+            
     except Exception as e:
-        logger.error(f"Error sending status notification: {str(e)}")
+        print(f"Error in send_booking_status_notification: {str(e)}")
         return False
 
 # Routes start here...
