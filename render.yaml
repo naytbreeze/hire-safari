@@ -23,10 +23,14 @@ services:
         fromDatabase:
           name: hire-safari-db
           property: connectionString
-      - key: MAIL_SERVER
+- key: MAIL_SERVER
         value: mail.hiresafari.com
       - key: MAIL_PORT
         value: 465
+      - key: MAIL_USE_SSL
+        value: "True"
+      - key: MAIL_USE_TLS
+        value: "False"
       - key: MAIL_USERNAME
         sync: false
       - key: MAIL_PASSWORD
