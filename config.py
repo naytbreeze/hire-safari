@@ -14,7 +14,7 @@ class Config:
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # Email configuration
-    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    MAIL_SERVER = os.environ.get('MAIL_SERVER', 'mail.hiresafari.com')
     MAIL_PORT = int(os.environ.get('MAIL_PORT', 465))
     MAIL_USERNAME = os.environ.get('MAIL_USERNAME')
     MAIL_PASSWORD = os.environ.get('MAIL_PASSWORD')
