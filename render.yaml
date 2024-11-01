@@ -24,7 +24,7 @@ services:
           name: hire-safari-db
           property: connectionString
       - key: MAIL_SERVER
-        value: smtp.gmail.com
+        value: mail.hiresafari.com
       - key: MAIL_PORT
         value: 465
       - key: MAIL_USERNAME
